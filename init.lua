@@ -199,14 +199,7 @@ vim.api.nvim_set_keymap(
   ':! tmux send-keys -t 1 C-c "\\!\\!" Enter Enter<CR>',
   { noremap = true, silent = true, desc = 'Restart process in window 1' }
 )
--- Debug
-vim.keymap.set('n', '<F1>', ":lua require'dap'.repl.open()<CR>")
-vim.keymap.set('n', '<F11>', ":lua require'dap'.continue()<CR>")
-vim.keymap.set('n', '<F12>', "lua require'dap'.terminate()<CR>")
-vim.keymap.set('n', '<leader>b', ":lua require'dap'.toggle_breakpoint()<CR>")
-vim.keymap.set('n', '<leader>B', ":lua require'dap'.set_breakpoint(vim.fn.input('Breakpoint condition: '))<CR>")
-vim.keymap.set('n', '<leader>lp', ":lua require'dap'.set_breakpoint(nil, nil, vim.fn.input('Log point message: '))<CR>")
-vim.keymap.set('n', '<leader>dt', ":lua require'dap-go'.debug_test()<CR>")
+
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
 
@@ -283,13 +276,7 @@ require('lazy').setup({
       'nvim-telescope/telescope.nvim', -- optional
       'ibhagwan/fzf-lua', -- optional
     },
-    config = function()
-      local neogit = require 'neogit'
-      neogit.setup()
-      vim.keymap.set('n', '<leader>G', function()
-        neogit.open()
-      end)
-    end,
+    config = true,
   },
   { 'sindrets/diffview.nvim', opts = {} },
   -- Here is a more advanced example where we pass configuration
@@ -459,37 +446,23 @@ require('lazy').setup({
       -- basic telescope configuration
       local conf = require('telescope.config').values
       local function toggle_telescope(harpoon_files)
-        local finder = function()
-          local paths = {}
-          for _, item in ipairs(harpoon_files.items) do
-            table.insert(paths, item.value)
-          end
-
-          return require('telescope.finders').new_table {
-            results = paths,
-          }
+        local file_paths = {}
+        for _, item in ipairs(harpoon_files.items) do
+          table.insert(file_paths, item.value)
         end
 
         require('telescope.pickers')
           .new({}, {
             prompt_title = 'Harpoon',
-            finder = finder(),
+            finder = require('telescope.finders').new_table {
+              results = file_paths,
+            },
             previewer = conf.file_previewer {},
             sorter = conf.generic_sorter {},
-            attach_mappings = function(prompt_bufnr, map)
-              map('i', '<C-d>', function()
-                local state = require 'telescope.actions.state'
-                local selected_entry = state.get_selected_entry()
-                local current_picker = state.get_current_picker(prompt_bufnr)
-
-                table.remove(harpoon_files.items, selected_entry.index)
-                current_picker:refresh(finder())
-              end)
-              return true
-            end,
           })
           :find()
       end
+
       vim.keymap.set('n', '<C-e>', function()
         toggle_telescope(harpoon:list())
       end, { desc = 'Open harpoon window' })
@@ -895,35 +868,8 @@ require('lazy').setup({
       vim.cmd.hi 'Comment gui=none'
     end,
   },
-  {
-    'mfussenegger/nvim-dap',
-  },
-  {
-    'leoluz/nvim-dap-go',
-    config = function()
-      require('dap-go').setup()
-    end,
-  },
-  {
-    'rcarriga/nvim-dap-ui',
-    dependencies = { 'mfussenegger/nvim-dap', 'nvim-neotest/nvim-nio' },
-    config = function()
-      local dap, dapui = require 'dap', require 'dapui'
-      dapui.setup()
-      dap.listeners.before.attach.dapui_config = function()
-        dapui.open()
-      end
-      dap.listeners.before.launch.dapui_config = function()
-        dapui.open()
-      end
-      dap.listeners.before.event_terminated.dapui_config = function()
-        dapui.close()
-      end
-      dap.listeners.before.event_exited.dapui_config = function()
-        dapui.close()
-      end
-    end,
-  },
+  { 'mfussenegger/nvim-dap' },
+  { 'leoluz/nvim-dap-go' },
   -- Highlight todo, notes, etc in comments
   { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
 
@@ -994,6 +940,26 @@ require('lazy').setup({
       --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
     end,
   },
+
+  -- The following two comments only work if you have downloaded the kickstart repo, not just copy pasted the
+  -- init.lua. If you want these files, they are in the repository, so you can just download them and
+  -- place them in the correct locations.
+
+  -- NOTE: Next step on your Neovim journey: Add/Configure additional plugins for Kickstart
+  --
+  --  Here are some example plugins that I've included in the Kickstart repository.
+  --  Uncomment any of the lines below to enable them (you will need to restart nvim).
+  --
+  -- require 'kickstart.plugins.debug',
+  -- require 'kickstart.plugins.indent_line',
+  -- require 'kickstart.plugins.lint',
+
+  -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
+  --    This is the easiest way to modularize your config.
+  --
+  --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
+  --    For additional information, see `:help lazy.nvim-lazy.nvim-structuring-your-plugins`
+  -- { import = 'custom.plugins' },
 }, {
   ui = {
     -- If you are using a Nerd Font: set icons to an empty table which will use the
